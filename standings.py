@@ -30,13 +30,16 @@ def get_league_id(country_id, league_name):
     res = requests.get(BASE_URL, params=params, timeout=20)
     res.raise_for_status()
 
-    leagues = res.json()["result"]
+    leagues = res.json().get("result", [])
 
+    # 🔒 STRICT MATCH (prevents wrong league)
     for league in leagues:
-        if league_name.lower() in league["league_name"].lower():
+        if league["league_name"].strip().lower() == league_name.lower():
             return league["league_key"]
 
-    raise ValueError("League not found")
+    # 🔍 Fallback: show what was available (debug help)
+    available = [l["league_name"] for l in leagues]
+    raise ValueError(f"Exact league not found. Available: {available}")
 
 def get_standings(league_key, season=None):
     if league_key not in LEAGUES:
