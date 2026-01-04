@@ -64,21 +64,32 @@ def get_standings(league_key, season=None):
     res = requests.get(BASE_URL, params=params, timeout=20)
     res.raise_for_status()
 
-    raw = res.json()["result"]
+    payload = res.json()
+
+    # 🔒 SAFETY CHECKS
+    if "result" not in payload or not payload["result"]:
+        raise ValueError("No standings data returned")
+
+    standings_block = payload["result"][0]
+
+    if "standings" not in standings_block:
+        raise ValueError("Standings field missing in API response")
+
+    teams = standings_block["standings"]
 
     standings = []
-    for team in raw:
+    for team in teams:
         standings.append({
-            "position": team["overall_league_position"],
+            "position": int(team["overall_league_position"]),
             "team": team["team_name"],
-            "played": team["overall_league_payed"],
-            "wins": team["overall_league_W"],
-            "draws": team["overall_league_D"],
-            "losses": team["overall_league_L"],
-            "goals_for": team["overall_league_GF"],
-            "goals_against": team["overall_league_GA"],
-            "goal_diff": team["overall_league_GF"] - team["overall_league_GA"],
-            "points": team["overall_league_PTS"]
+            "played": int(team["overall_league_payed"]),
+            "wins": int(team["overall_league_W"]),
+            "draws": int(team["overall_league_D"]),
+            "losses": int(team["overall_league_L"]),
+            "goals_for": int(team["overall_league_GF"]),
+            "goals_against": int(team["overall_league_GA"]),
+            "goal_diff": int(team["overall_league_GF"]) - int(team["overall_league_GA"]),
+            "points": int(team["overall_league_PTS"])
         })
 
     data = {
