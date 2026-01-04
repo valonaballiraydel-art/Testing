@@ -5,16 +5,25 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return {"status": "ok", "message": "SofaScore Scraper running"}
+    return jsonify({
+        "status": "ok",
+        "message": "SofaScore Football Standings API"
+    })
 
-@app.route("/scrape")
-def scrape():
-    url = request.args.get("url")
-    if not url:
-        return jsonify({"error": "Missing url parameter"}), 400
+@app.route("/standings")
+def standings():
+    tournament_id = request.args.get("tournament_id")
+    season_id = request.args.get("season_id")
 
-    data = scrape_standings(url)
-    return jsonify({"standings": data})
+    if not tournament_id or not season_id:
+        return jsonify({
+            "error": "Missing tournament_id or season_id"
+        }), 400
 
-if __name__ == "__main__":
-    app.run()
+    data = scrape_standings(tournament_id, season_id)
+
+    return jsonify({
+        "tournament_id": tournament_id,
+        "season_id": season_id,
+        "standings": data
+    })
