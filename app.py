@@ -13,12 +13,13 @@ def home():
 @app.route("/standings")
 def standings():
     league = request.args.get("league")
+    season = request.args.get("season")  # optional
 
     if not league:
         return jsonify({"error": "Missing league parameter"}), 400
 
     try:
-        data = get_standings(league.lower())
+        data = get_standings(league.lower(), season)
         return jsonify(data)
     except Exception as e:
         return jsonify({
