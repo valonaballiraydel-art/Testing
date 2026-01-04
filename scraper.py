@@ -16,34 +16,32 @@ def scrape_standings(url):
             user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
         )
 
-        # Load page
+        # Go to tournament URL
         page.goto(url, timeout=60000)
 
-        # Give SofaScore time to render (React app)
-        page.wait_for_timeout(8000)
+        # Force FOOTBALL context to load
+        page.wait_for_selector('a[href*="/football/"]', timeout=60000)
 
-        # Try to read page content safely
-        try:
-            body = page.query_selector("body")
-            if not body:
-                browser.close()
-                return {
-                    "status": "error",
-                    "message": "Body not found"
-                }
+        # Give React time to finish rendering standings
+        page.wait_for_timeout(6000)
 
-            text = body.inner_text()
+        # Try to locate table rows (standings)
+        rows = page.query_selector_all("div[role='row']")
 
-            browser.close()
+        results = []
 
-            return {
-                "status": "page_loaded",
-                "text_sample": text[:2000]  # first 2000 chars only
-            }
+        for row in rows:
+            try:
+                text = row.inner_text().strip()
+                if text and len(text) > 5:
+                    results.append(text)
+            except:
+                continue
 
-        except Exception as e:
-            browser.close()
-            return {
-                "status": "error",
-                "message": str(e)
-            }
+        browser.close()
+
+        return {
+            "status": "football_page_loaded",
+            "rows_found": len(results),
+            "sample_rows": results[:10]  # show only first 10 rows
+        }
