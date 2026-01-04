@@ -1,33 +1,38 @@
 import requests
 
+SOFASCORE_API = "https://api.sofascore.com/api/v1"
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json"
+}
+
 def scrape_standings(tournament_id, season_id):
-    api_url = f"https://api.sofascore.com/api/v1/unique-tournament/{tournament_id}/season/{season_id}/standings/total"
+    url = f"{SOFASCORE_API}/unique-tournament/{tournament_id}/season/{season_id}/standings/total"
 
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
-    }
-
-    response = requests.get(api_url, headers=headers, timeout=20)
+    response = requests.get(url, headers=HEADERS, timeout=15)
     response.raise_for_status()
 
     data = response.json()
 
+    if "standings" not in data or not data["standings"]:
+        return []
+
+    rows = data["standings"][0].get("rows", [])
     standings = []
 
-    # SofaScore returns multiple standings types (total/home/away)
-    for row in data["standings"][0]["rows"]:
+    for row in rows:
         standings.append({
-            "position": row["position"],
+            "position": row.get("position"),
             "team": row["team"]["name"],
-            "played": row["matches"],
-            "wins": row["wins"],
-            "draws": row["draws"],
-            "losses": row["losses"],
-            "goals_for": row["scoresFor"],
-            "goals_against": row["scoresAgainst"],
-            "goal_diff": row["goalDiff"],
-            "points": row["points"]
+            "played": row.get("matches"),
+            "wins": row.get("wins"),
+            "draws": row.get("draws"),
+            "losses": row.get("losses"),
+            "goals_for": row.get("scoresFor"),
+            "goals_against": row.get("scoresAgainst"),
+            "goal_diff": row.get("goalDiff"),
+            "points": row.get("points")
         })
 
     return standings
