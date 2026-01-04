@@ -7,7 +7,7 @@ app = Flask(__name__)
 def home():
     return jsonify({
         "status": "ok",
-        "message": "SofaScore Football Standings API"
+        "service": "SofaScore Football Standings API"
     })
 
 @app.route("/standings")
@@ -17,10 +17,16 @@ def standings():
 
     if not tournament_id or not season_id:
         return jsonify({
-            "error": "Missing tournament_id or season_id"
+            "error": "tournament_id and season_id are required"
         }), 400
 
-    data = scrape_standings(tournament_id, season_id)
+    try:
+        data = scrape_standings(tournament_id, season_id)
+    except Exception as e:
+        return jsonify({
+            "error": "Failed to fetch standings",
+            "details": str(e)
+        }), 500
 
     return jsonify({
         "tournament_id": tournament_id,
