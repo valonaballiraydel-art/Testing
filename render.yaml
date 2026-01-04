@@ -2,4 +2,3 @@ services:
   - type: web
     name: sofascore-scraper
     env: docker
-    plan: free
