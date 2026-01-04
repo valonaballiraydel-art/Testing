@@ -1,45 +1,29 @@
-import time
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+from playwright.sync_api import sync_playwright
 
-def get_standings(url):
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
+def scrape_standings(url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-    driver = webdriver.Chrome(options=options)
+        page.goto(url, timeout=60000)
+        page.wait_for_timeout(5000)
 
-    driver.get(url)
+        rows = page.query_selector_all("div[data-testid='standings-row']")
 
-    # wait for JavaScript to load
-    time.sleep(5)
+        standings = []
+        for row in rows:
+            try:
+                position = row.query_selector("div:nth-child(1)").inner_text()
+                team = row.query_selector("a").inner_text()
+                points = row.query_selector("div:last-child").inner_text()
+            except:
+                continue
 
-    # Classes on SofaScore can be dynamic — use XPaths or data-* attributes
-    rows = driver.find_elements(
-        By.XPATH, "//div[contains(@class,'tableRow') or contains(@class,'standingsRow')]"
-    )
+            standings.append({
+                "position": position.strip(),
+                "team": team.strip(),
+                "points": points.strip()
+            })
 
-    standings = []
-    for row in rows:
-        try:
-            position = row.find_element(By.XPATH, ".//div[contains(@class,'position')]").text
-            team = row.find_element(By.XPATH, ".//div[contains(@class,'teamName')]").text
-            points = row.find_element(By.XPATH, ".//div[contains(@class,'points')]").text
-        except Exception:
-            continue
-
-        standings.append({
-            "position": position.strip(),
-            "team": team.strip(),
-            "points": points.strip()
-        })
-
-    driver.quit()
-    return {
-        "url": url,
-        "standings": standings
-    }
+        browser.close()
+        return standings
