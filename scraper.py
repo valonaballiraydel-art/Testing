@@ -1,49 +1,30 @@
-from playwright.sync_api import sync_playwright
-import re
+import requests
 
-def scrape_standings(url):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--single-process"
-            ]
-        )
+def scrape_standings(url=None):
+    api_url = "https://api.sofascore.com/api/v1/unique-tournament/17/season/52186/standings/total"
 
-        page = browser.new_page(
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
-        )
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+    }
 
-        page.goto(url, timeout=60000)
+    r = requests.get(api_url, headers=headers, timeout=20)
+    r.raise_for_status()
 
-        # Ensure football UI loads
-        page.wait_for_selector('a[href*="/football/"]', timeout=60000)
-        page.wait_for_timeout(6000)
+    data = r.json()
 
-        team_links = page.query_selector_all('a[href*="/team/"]')
+    standings = []
 
-        rows = []
+    for row in data["standings"][0]["rows"]:
+        standings.append({
+            "position": row["position"],
+            "team": row["team"]["name"],
+            "played": row["matches"],
+            "points": row["points"]
+        })
 
-        for link in team_links:
-            try:
-                row = link.evaluate_handle("el => el.closest('div')")
-                text = row.inner_text().strip()
-
-                # ✅ KEEP ONLY ROWS THAT LOOK LIKE STANDINGS
-                if re.search(r"\d", text) and len(text) > 15:
-                    rows.append(text)
-
-            except:
-                continue
-
-        browser.close()
-
-        return {
-            "status": "football_page_loaded",
-            "team_links_found": len(team_links),
-            "rows_found": len(rows),
-            "sample_rows": rows[:10]
-        }
+    return {
+        "league": "Premier League",
+        "season": "2025/26",
+        "standings": standings
+    }
