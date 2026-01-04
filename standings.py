@@ -73,7 +73,12 @@ def get_standings(league_key, season=None):
     if "result" not in payload or not payload["result"]:
         raise ValueError("No standings data returned")
 
-    standings_block = payload["result"][0]
+    results = payload.get("result", [])
+
+if not results:
+    raise ValueError("No standings returned by API")
+
+standings_block = results[0]
 
     if "standings" not in standings_block:
         raise ValueError("Standings field missing in API response")
