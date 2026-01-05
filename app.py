@@ -8,13 +8,13 @@ app = Flask(__name__)
 def home():
     return jsonify({
         "status": "ok",
-        "message": "Football Standings API via API-Football"
+        "message": "Football Standings API via Football-Data.org"
     })
 
 @app.route("/standings")
 def standings():
     league = request.args.get("league")
-    season = request.args.get("season") # Optional: e.g., 2023
+    season = request.args.get("season") 
 
     if not league:
         return jsonify({"error": "Missing league parameter"}), 400
@@ -25,8 +25,7 @@ def standings():
     except Exception as e:
         return jsonify({
             "error": "Standings Lookup Failed",
-            "message": str(e),
-            "traceback": traceback.format_exc()
+            "message": str(e)
         }), 500
 
 if __name__ == "__main__":
