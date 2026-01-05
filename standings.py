@@ -2,14 +2,14 @@ import os
 import time
 import requests
 
-# Set this to FOOTBALL_DATA_API_KEY in your Render environment variables
+# This must match the variable name in your Render Dashboard
 API_KEY = os.getenv("FOOTBALL_DATA_API_KEY")
 BASE_URL = "https://api.football-data.org/v4/competitions"
 
 CACHE = {}
-CACHE_TTL = 900  # 15 minutes (Free tier is 10 requests/min, so cache is important)
+CACHE_TTL = 900  # 15 minutes (Free tier limit is 10 calls/min)
 
-# Football-Data.org specific league codes
+# League codes specifically for Football-Data.org
 LEAGUE_CODES = {
     "england": "PL",   # Premier League
     "spain": "PD"      # Primera Division (La Liga)
@@ -19,7 +19,7 @@ def get_standings(league_key, season=None):
     if league_key not in LEAGUE_CODES:
         raise ValueError(f"League '{league_key}' not supported. Use 'england' or 'spain'.")
 
-    # If no season is provided, football-data.org defaults to the current one
+    # The API defaults to the current season if none is provided
     cache_key = f"{league_key}_{season or 'current'}"
     now = time.time()
 
@@ -29,6 +29,7 @@ def get_standings(league_key, season=None):
     league_code = LEAGUE_CODES[league_key]
     url = f"{BASE_URL}/{league_code}/standings"
     
+    # Football-Data.org requires 'X-Auth-Token' in the header
     headers = { 'X-Auth-Token': API_KEY }
     params = {}
     if season:
@@ -37,18 +38,17 @@ def get_standings(league_key, season=None):
     response = requests.get(url, headers=headers, params=params, timeout=20)
     
     if response.status_code == 403:
-        raise Exception("Access Denied: Your API key doesn't have access to this league or season.")
+        raise Exception("Access Denied: Check your API key or league permissions.")
     
     response.raise_for_status()
     data = response.json()
 
-    # Football-Data.org structure: data['standings'] is a list of tables (TOTAL, HOME, AWAY)
+    # Access the 'TOTAL' standings table from the results
     standings_list = data.get("standings", [])
     if not standings_list:
-        raise ValueError("No standings data found in the response.")
+        raise ValueError("No standings data found.")
 
-    # We want the 'TOTAL' table
-    total_table = next((s for s in standings_list if s['type'] == 'TOTAL'), standings_list[0])
+    total_table = next((s for s in standings_list if s.get('type') == 'TOTAL'), standings_list[0])
     rows = total_table.get("table", [])
 
     formatted_standings = []
@@ -61,9 +61,7 @@ def get_standings(league_key, season=None):
             "draws": row.get("draw"),
             "losses": row.get("lost"),
             "points": row.get("points"),
-            "goal_diff": row.get("goalDifference"),
-            "goals_for": row.get("goalsFor"),
-            "goals_against": row.get("goalsAgainst")
+            "goal_diff": row.get("goalDifference")
         })
 
     result = {
