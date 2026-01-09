@@ -30,3 +30,19 @@ def standings():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
+import os
+import requests
+
+API_KEY = os.getenv("FOOTBALL_API_KEY")
+
+@app.route("/standings")
+def standings():
+    url = "https://api.football-data.org/v4/competitions/PL/standings"
+    headers = {"X-Auth-Token": API_KEY}
+
+    r = requests.get(url, headers=headers)
+    data = r.json()
+
+    return jsonify(data)
+
