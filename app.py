@@ -46,3 +46,8 @@ def standings():
 
     return jsonify(data)
 
+@app.route("/test-key")
+def test_key():
+    return jsonify({"key_loaded": bool(API_KEY)})
+
+
